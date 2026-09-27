@@ -1,6 +1,31 @@
-Write your reflection here.
+This assignment made Streamlit's rerun model concrete instead of just a fact I'd
+read. Writing one_package.py first showed me that a widget's return value (the
+string from st.text_input, later None from st.file_uploader) is the only signal
+you have about what the user has done so far, and that the whole script really
+does execute top to bottom on every rerun, including the very first render when
+nothing has been entered yet. That's why every app needs a guard right after the
+widget calls — without it, parse_packaging blows up on an empty string on the
+first run before anyone has typed anything.
 
-See reflection.md for what makes a good reflection — be specific, use the
-terminology from this assignment (rerun, widget, return value, guard, bytes vs.
-text, decode, session state, initialise once, button-triggered, metric), and make
-it actionable.
+process_file.py made the bytes-vs-text distinction click for me: st.file_uploader
+hands back raw bytes because it has no way of knowing whether the upload is text
+or an image, so I had to explicitly decode it with .decode("utf-8") before I could
+split it into lines with splitlines(). I also had to remember to strip() each line
+and skip blank ones, since a text file's trailing newline leaves an empty "line"
+at the end.
+
+process_files.py was the hardest and most useful part. My first instinct would
+have been to set files_processed = 0 at the top of the script — exactly the trap
+the assignment described, since that variable resets to 0 on every rerun because
+the whole script re-executes. Putting the counters and history list in
+st.session_state and initializing them only inside an
+`if "files_processed" not in st.session_state:` block was what let them survive
+across reruns. The second trap — the uploader keeping its file selected across
+reruns — meant processing couldn't happen "whenever there's a file"; it had to be
+gated on st.button, which is only True on the one rerun its click caused.
+
+I want to get more comfortable with session
+state in apps where I need to reset only part of the state (like a Reset button
+would need to), and go back through the class session-state examples to make
+sure the "initialise once, update on interaction, display from state" pattern is
+fully internalized rather than something I copied for this assignment.
